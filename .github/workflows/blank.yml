@@ -1,19 +1,37 @@
-name: Build kernel packages
-on: push
+name: Build OpenWrt official-21.02
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Build kernel
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    if: github.event.repository.owner.id == github.event.sender.id
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
 
-      - name: Build
-        run: sudo bash build_kernel.sh
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install $(curl -fsSL git.io/ubuntu-2004-openwrt)
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        sudo timedatectl set-timezone "$TZ"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
+        echo "COMPILE_STARTINGTIME=$(date +"%Y.%m.%d.%H%M")" >> $GITHUB_ENV
 
-      - name: Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: artifact
-          path: ${{ github.workspace }}/artifact/
+    - name: Build
+      run: sudo bash build_kernel.sh
+
+    - name: Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: artifact
+        path: ${{ github.workspace }}/artifact/
