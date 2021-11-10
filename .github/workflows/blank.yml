@@ -1,4 +1,4 @@
-name: Build OpenWrt official-21.02
+name: Build Kernel
 
 on:
   repository_dispatch:
